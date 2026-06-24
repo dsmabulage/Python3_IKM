@@ -313,6 +313,8 @@ export default function App() {
   const [questionCount, setQuestionCount] = useState(TOTAL_QUESTIONS)
   const [selectedTopics, setSelectedTopics] = useState([]) // empty = all
   const [resumeSnapshot, setResumeSnapshot] = useState(null)
+  const [penaltyEnabled, setPenaltyEnabled] = useState(false)
+  const [penaltyAmount, setPenaltyAmount] = useState(0.25)
   const timerRef = useRef(null)
 
   useEffect(() => {
@@ -379,6 +381,8 @@ function resumeExam() {
   setTimeLeft(typeof snap.timeLeft === "number" ? snap.timeLeft : TIME_LIMIT_SECONDS)
   setQuestionCount(snap.questionCount ?? TOTAL_QUESTIONS)
   setSelectedTopics(snap.selectedTopics ?? [])
+  setPenaltyEnabled(snap.penaltyEnabled ?? false)
+  setPenaltyAmount(snap.penaltyAmount ?? 0.25)
 }
 
 function abandonExam() {
@@ -424,9 +428,11 @@ useEffect(() => {
     timeLeft,
     questionCount,
     selectedTopics,
+    penaltyEnabled,
+    penaltyAmount,
   }
   saveInProgress(state)
-}, [startTs, exam, idx, selected, locked, correctCount, attempted, timeLeft, questionCount, selectedTopics])
+}, [startTs, exam, idx, selected, locked, correctCount, attempted, timeLeft, questionCount, selectedTopics, penaltyEnabled, penaltyAmount])
 
 // If time expires, keep the last saved state (so they can still view results)
 
@@ -466,14 +472,8 @@ const q = exam[idx]
 
   function toggleOption(optIdx) {
     if (!q || locked) return
-    const ms = isMultiSelect(q)
     setSelected((prev) => {
       const next = new Set(prev)
-      if (!ms) {
-        next.clear()
-        next.add(optIdx)
-        return next
-      }
       next.has(optIdx) ? next.delete(optIdx) : next.add(optIdx)
       return next
     })
@@ -483,9 +483,18 @@ const q = exam[idx]
     if (!q || locked || !selected.size) return
     setLocked(true)
     const corr = new Set(q.correct || [])
-    const ok = corr.size === selected.size && [...corr].every((x) => selected.has(x))
+    const totalCorrect = corr.size || 1
+    let correctChosen = 0
+    let wrongChosen = 0
+    for (const si of selected) {
+      if (corr.has(si)) correctChosen++
+      else wrongChosen++
+    }
+    const earned = correctChosen / totalCorrect
+    const deduction = penaltyEnabled ? (wrongChosen * penaltyAmount) / totalCorrect : 0
+    const questionScore = Math.max(0, earned - deduction)
     setAttempted((a) => a + 1)
-    if (ok) setCorrectCount((c) => c + 1)
+    setCorrectCount((c) => c + questionScore)
   }
 
   function nextQuestion() {
@@ -620,7 +629,27 @@ const q = exam[idx]
                     </label>
                   ))}
                 </div>
-                <p className="muted small">Tip: Uncheck “All topics” by selecting at least one topic.</p>
+                <p className=”muted small”>Tip: Uncheck “All topics” by selecting at least one topic.</p>
+              </div>
+
+              <div className=”field”>
+                <span className=”label”>Scoring</span>
+                <label className=”chk”>
+                  <input type=”checkbox” checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
+                  <span>Penalty for wrong answers</span>
+                </label>
+                {penaltyEnabled && (
+                  <label className=”field” style={{ marginTop: 6 }}>
+                    <span className=”label small”>Penalty per wrong selection</span>
+                    <select value={penaltyAmount} onChange={(e) => setPenaltyAmount(Number(e.target.value))}>
+                      <option value={0.25}>−0.25 (mild)</option>
+                      <option value={0.5}>−0.5 (moderate)</option>
+                      <option value={1}>−1.0 (harsh)</option>
+                    </select>
+                    <span className=”muted small”>Deducted as a fraction of one correct answer's value per wrong selection.</span>
+                  </label>
+                )}
+                <p className=”muted small”>All questions now accept multiple answers. Partial credit is awarded for each correct option chosen.</p>
               </div>
             </div>
 
@@ -659,7 +688,7 @@ const q = exam[idx]
                     <div key={i} className="row">
                       <div className="mono">{r.timestamp}</div>
                       <div><b>{r.score_pct}%</b></div>
-                      <div>{r.correct}/{r.attempted}</div>
+                      <div>{typeof r.correct === 'number' ? r.correct.toFixed(1) : r.correct}/{r.attempted}</div>
                       <div>{Math.floor(r.duration_sec/60)}m</div>
                     </div>
                   ))}
@@ -675,8 +704,10 @@ const q = exam[idx]
             <div className="qmeta">
               <span className="pill">Q {idx + 1} / {exam.length}</span>
               <span className="pill">Topic: {q.topic || 'General'}</span>
-              <span className="pill">Score: {correctCount}/{attempted}</span>
+              <span className="pill">Score: {correctCount.toFixed(1)}/{attempted}</span>
+              {penaltyEnabled && <span className="pill">Penalty: −{penaltyAmount}</span>}
             </div>
+            <p className="muted small" style={{ margin: '4px 0' }}>Select one or more answers</p>
 
             <pre className="prompt">
                 <PromptText text={q.prompt} />
@@ -743,7 +774,7 @@ const q = exam[idx]
         {startTs && (isDone || idx >= exam.length) && (
           <div className="done">
             <h2>Done</h2>
-            <p><b>Score:</b> {correctCount}/{attempted} ({pct(correctCount, attempted).toFixed(1)}%)</p>
+            <p><b>Score:</b> {correctCount.toFixed(1)}/{attempted} ({pct(correctCount, attempted).toFixed(1)}%)</p>
             <p className="muted">Attempts are saved locally in your browser (localStorage).</p>
             <div className="actions">
               <button className="btn" onClick={finishAndLog}>Save Attempt</button>
