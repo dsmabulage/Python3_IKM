@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 
 const TOTAL_QUESTIONS = 54
@@ -29,7 +29,7 @@ function saveSeenSet(set) {
   localStorage.setItem(LS_SEEN, JSON.stringify([...set]));
 }
 
-// crude but effective “is this code?” check
+// crude but effective "is this code?" check
 function looksLikeCode(text) {
   return (
     text.includes("\n") &&
@@ -48,13 +48,14 @@ export function PromptText({ text }) {
     return (
       <SyntaxHighlighter
         language="python"
-        style={oneLight}
+        style={vscDarkPlus}
         customStyle={{
           margin: 0,
-          borderRadius: 12,
-          padding: 16,
+          borderRadius: 8,
+          padding: 0,
           fontSize: 14,
-          lineHeight: 1.5,
+          lineHeight: 1.65,
+          background: 'transparent',
         }}
       >
         {text}
@@ -556,7 +557,7 @@ const q = exam[idx]
         </div>
         <div className="pillRow">
           <span className="pill">Bank: {bank.length} q</span>
-          {startTs && <span className="pill">Time left: {fmtMMSS(timeLeft)}</span>}
+          {startTs && <span className={`pill${timeLeft <= 600 ? ' pill-danger' : ''}`}>Time left: {fmtMMSS(timeLeft)}</span>}
         </div>
       </header>
 
@@ -629,32 +630,32 @@ const q = exam[idx]
                     </label>
                   ))}
                 </div>
-                <p className=”muted small”>Tip: Uncheck “All topics” by selecting at least one topic.</p>
+                <p className="muted small">Tip: Uncheck "All topics" by selecting at least one topic.</p>
               </div>
 
-              <div className=”field”>
-                <span className=”label”>Scoring</span>
-                <label className=”chk”>
-                  <input type=”checkbox” checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
+              <div className="field">
+                <span className="label">Scoring</span>
+                <label className="chk">
+                  <input type="checkbox" checked={penaltyEnabled} onChange={(e) => setPenaltyEnabled(e.target.checked)} />
                   <span>Penalty for wrong answers</span>
                 </label>
                 {penaltyEnabled && (
-                  <label className=”field” style={{ marginTop: 6 }}>
-                    <span className=”label small”>Penalty per wrong selection</span>
+                  <label className="field" style={{ marginTop: 6 }}>
+                    <span className="label small">Penalty per wrong selection</span>
                     <select value={penaltyAmount} onChange={(e) => setPenaltyAmount(Number(e.target.value))}>
                       <option value={0.25}>−0.25 (mild)</option>
                       <option value={0.5}>−0.5 (moderate)</option>
                       <option value={1}>−1.0 (harsh)</option>
                     </select>
-                    <span className=”muted small”>Deducted as a fraction of one correct answer's value per wrong selection.</span>
+                    <span className="muted small">Deducted as a fraction of one correct answer's value per wrong selection.</span>
                   </label>
                 )}
-                <p className=”muted small”>All questions now accept multiple answers. Partial credit is awarded for each correct option chosen.</p>
+                <p className="muted small">All questions now accept multiple answers. Partial credit is awarded for each correct option chosen.</p>
               </div>
             </div>
 
             <button className="btn" onClick={() => startExam({ fresh: true })}>Start Practice</button>
-            <p className="hint">Tip: On your phone, open the site and “Add to Home Screen.”</p>
+            <p className="hint">Tip: On your phone, open the site and "Add to Home Screen."</p>
 
             <section className="history">
               <div className="historyHead">
@@ -773,12 +774,17 @@ const q = exam[idx]
 
         {startTs && (isDone || idx >= exam.length) && (
           <div className="done">
-            <h2>Done</h2>
-            <p><b>Score:</b> {correctCount.toFixed(1)}/{attempted} ({pct(correctCount, attempted).toFixed(1)}%)</p>
-            <p className="muted">Attempts are saved locally in your browser (localStorage).</p>
+            <h2>Exam Complete</h2>
+            <div className="scoreDisplay">
+              <span className="scoreBig">
+                {correctCount.toFixed(1)}<span className="scoreOf">/{attempted}</span>
+              </span>
+              <span className="scorePct">{pct(correctCount, attempted).toFixed(1)}%</span>
+            </div>
+            <p className="muted">Attempts are saved locally in your browser.</p>
             <div className="actions">
-              <button className="btn" onClick={finishAndLog}>Save Attempt</button>
-              <button className="btn ghost" onClick={abandonExam}>Back</button>
+              <button className="btn" onClick={finishAndLog}>Save &amp; Return</button>
+              <button className="btn ghost" onClick={abandonExam}>Discard</button>
             </div>
 
             <DonateBlock />
