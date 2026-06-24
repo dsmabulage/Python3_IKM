@@ -773,9 +773,7 @@ const q = exam[idx]
         )}
       </main>
 
-      <footer className="foot">
-        <span className="muted">Hosted via GitHub Pages • Export CSV available</span>
-      </footer>
+
     </div>
   )
 }
