@@ -6,11 +6,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 const TOTAL_QUESTIONS = 54
 const TIME_LIMIT_SECONDS = 135 * 60
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-const DONATE = {
-  paypal: "https://www.paypal.me/larrychiem",
-  github: "https://github.com/sponsors/LarryChiem",
-  coffee: "https://www.buymeacoffee.com/larrychiem",
-}
+
 const LS_SEEN = "ppe_seen_v1";
 const LS_QUEUE = "ppe_queue_v1";
 const LS_QUEUE_POS = "ppe_queue_pos_v1";
@@ -169,21 +165,6 @@ function buildExam(pool, count) {
   return { exam, remainingUnseen: unseenIds.length };
 }
 
-function DonateBlock() {
-    return (
-        <section className="donate">
-            <h2>Support</h2>
-            <p className="muted">
-                This app is free and has no ads. If it helped you, donations are optional and appreciated.
-            </p>
-            <div className="donateBtns">
-                <a className="btn" href={DONATE.paypal} target="_blank" rel="noreferrer">Donate (Paypal)</a>
-                <a className="btn ghost" href={DONATE.github} target="_blank" rel="noreferrer">Sponsor (GitHub)</a>
-                <a className="btn ghost" href={DONATE.coffee} target="_blank" rel="noreferrer">Buy me a coffee</a>
-            </div>
-        </section>
-    )
-}
 
 const LS_INPROGRESS = "ppe_inprogress_v1";
 
@@ -696,7 +677,7 @@ const q = exam[idx]
                 </div>
               )}
             </section>
-            <DonateBlock />
+
           </div>
         )}
 
@@ -787,7 +768,7 @@ const q = exam[idx]
               <button className="btn ghost" onClick={abandonExam}>Discard</button>
             </div>
 
-            <DonateBlock />
+
           </div>
         )}
       </main>
